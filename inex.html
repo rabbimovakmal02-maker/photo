@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>D,N,X.music</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0f10; --surface:#16191b; --surface2:#1e2224;
+  --text:#eef1f0; --muted:#8b9391; --accent:#3ddc97; --accent-dim:#245c42;
+  --border:#272c2e; --danger:#e2604f;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;
+  display:flex; align-items:center; justify-content:center; min-height:100%;
+  padding:24px;
+}
+h1,h2,.brand{font-family:'Space Grotesk',system-ui,sans-serif}
+.card{
+  width:100%; max-width:420px; background:var(--surface);
+  border:1px solid var(--border); border-radius:14px; padding:32px;
+}
+.brand{font-size:22px; font-weight:700; letter-spacing:-0.02em; margin:0 0 4px}
+.sub{color:var(--muted); font-size:14px; margin:0 0 28px}
+label{display:block; font-size:13px; color:var(--muted); margin:16px 0 6px}
+input{
+  width:100%; padding:11px 13px; background:var(--surface2); border:1px solid var(--border);
+  border-radius:8px; color:var(--text); font-size:15px; font-family:inherit;
+}
+input:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent)}
+button{
+  font-family:inherit; font-size:15px; font-weight:500; border:none; border-radius:8px;
+  padding:12px 16px; cursor:pointer; width:100%;
+}
+.btn-primary{background:var(--accent); color:#06110c; margin-top:22px}
+.btn-primary:hover{filter:brightness(1.08)}
+.btn-ghost{background:transparent; color:var(--muted); margin-top:10px; border:1px solid var(--border)}
+.btn-ghost:hover{color:var(--text)}
+.err{color:var(--danger); font-size:13px; min-height:18px; margin-top:6px}
+.hidden{display:none !important}
+
+.player{max-width:460px}
+.now{
+  background:var(--surface2); border-radius:10px; padding:18px; margin:20px 0;
+  display:flex; align-items:center; gap:14px;
+}
+.disc{
+  width:52px; height:52px; border-radius:50%; background:conic-gradient(from 0deg, var(--accent), var(--accent-dim), var(--accent));
+  flex-shrink:0;
+}
+.disc.spin{animation:spin 3s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.disc.spin{animation:none}}
+.now-title{font-weight:500; font-size:15px}
+.now-state{color:var(--muted); font-size:13px; margin-top:2px}
+.track-list{display:flex; flex-direction:column; gap:8px; margin-top:8px}
+.track-row{
+  display:flex; align-items:center; justify-content:space-between;
+  background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:12px 14px;
+}
+.track-row.playing{border-color:var(--accent)}
+.track-name{font-size:14px}
+.mini-btn{
+  width:auto; padding:7px 14px; font-size:13px; background:var(--accent); color:#06110c;
+}
+.mini-btn.stop{background:var(--danger); color:#180a08}
+.top-row{display:flex; justify-content:space-between; align-items:center}
+.pill{font-size:12px; color:var(--muted); background:var(--surface2); border:1px solid var(--border); padding:4px 10px; border-radius:999px}
+.note{color:var(--muted); font-size:12.5px; line-height:1.5; margin-top:22px; padding-top:16px; border-top:1px solid var(--border)}
+</style>
+</head>
+<body>
+
+<div id="auth" class="card">
+  <p class="brand">D,N,X.music</p>
+  <p class="sub" id="authSub">Kirish uchun ma'lumotlaringizni kiriting</p>
+  <label>Foydalanuvchi nomi</label>
+  <input id="uName" autocomplete="username" placeholder="masalan: bekzod">
+  <label>Parol</label>
+  <input id="uPass" type="password" autocomplete="current-password">
+  <div class="err" id="authErr"></div>
+  <button class="btn-primary" id="loginBtn">Kirish</button>
+  <button class="btn-ghost" id="registerBtn">Ro'yxatdan o'tish</button>
+</div>
+
+<div id="player" class="card player hidden">
+  <div class="top-row">
+    <p class="brand">D,N,X.music</p>
+    <span class="pill" id="whoPill"></span>
+  </div>
+  <div class="now">
+    <div class="disc" id="disc"></div>
+    <div>
+      <div class="now-title" id="nowTitle">Hech narsa yoqilmagan</div>
+      <div class="now-state" id="nowState">Admin musiqa yoqishini kuting</div>
+    </div>
+  </div>
+  <audio id="audioEl" loop></audio>
+  <p class="note" id="notifNote"></p>
+  <button class="btn-ghost" id="logoutBtn">Chiqish</button>
+</div>
+
+<div id="admin" class="card hidden">
+  <div class="top-row">
+    <p class="brand">Admin panel</p>
+    <span class="pill">D,N,X.music</span>
+  </div>
+  <p class="sub">Foydalanuvchilar uchun musiqa tanlang</p>
+  <div class="track-list" id="adminTracks"></div>
+  <label style="margin-top:24px">O'z musiqangizni qo'shish</label>
+  <input id="uploadName" placeholder="Musiqa nomi" style="margin-bottom:10px">
+  <input id="uploadFile" type="file" accept="audio/*">
+  <div class="err" id="uploadErr"></div>
+  <button class="btn-primary" id="uploadBtn">Yuklash</button>
+  <button class="btn-ghost" id="adminLogout" style="margin-top:20px">Chiqish</button>
+</div>
+
+<script>
+const TRACKS = [
+  {id:'lofi', type:'synth', name:'Lo-fi tun', notes:[261,0,293,0,329,0,261,0,246,0,220,0], tempo:420},
+  {id:'energy', type:'synth', name:'Energiya', notes:[392,392,440,392,523,466,392,349], tempo:180},
+  {id:'calm', type:'synth', name:'Tinch oqim', notes:[349,0,392,0,440,0,392,0], tempo:520},
+];
+let uploaded = [];
+let db=null, assets=null, user=null, isAdmin=false, audioCtx=null, playLoop=null, notifiedFor=null;
+function allTracks(){ return TRACKS.concat(uploaded); }
+
+function synth(freqs, tempo){
+  if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  if(playLoop) clearInterval(playLoop);
+  let i=0;
+  const step=()=>{
+    const f = freqs[i%freqs.length]; i++;
+    if(!f) return;
+    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+    osc.type='sine'; osc.frequency.value=f;
+    gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.12, audioCtx.currentTime+0.02);
+    gain.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime+tempo/1000*0.9);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime+tempo/1000);
+  };
+  step(); playLoop = setInterval(step, tempo);
+}
+function stopSynth(){ if(playLoop) clearInterval(playLoop); playLoop=null; }
+
+function show(id){ ['auth','player','admin'].forEach(x=>document.getElementById(x).classList.toggle('hidden', x!==id)); }
+
+async function boot(){
+  db = await claude.use('db');
+  assets = await claude.use('assets');
+  document.getElementById('loginBtn').onclick = ()=>auth(false);
+  document.getElementById('registerBtn').onclick = ()=>auth(true);
+  document.getElementById('logoutBtn').onclick = ()=>location.reload();
+  document.getElementById('adminLogout').onclick = ()=>location.reload();
+  document.getElementById('uploadBtn').onclick = uploadTrack;
+  renderTrackList();
+  document.getElementById('adminTracks').addEventListener('click', e=>{
+    if(e.target.tagName!=='BUTTON') return;
+    const id = e.target.dataset.id;
+    if(e.target.classList.contains('stop')) setNowPlaying(null);
+    else setNowPlaying(allTracks().find(t=>t.id===id));
+  });
+}
+
+function renderTrackList(){
+  const list = document.getElementById('adminTracks');
+  list.innerHTML = '';
+  allTracks().forEach(t=>{
+    const row = document.createElement('div'); row.className='track-row'; row.id='row-'+t.id;
+    row.innerHTML = `<span class="track-name">${t.name}</span><button class="mini-btn" data-id="${t.id}">Boshlash</button>`;
+    list.appendChild(row);
+  });
+}
+
+async function uploadTrack(){
+  const errEl = document.getElementById('uploadErr'); errEl.textContent='';
+  const name = document.getElementById('uploadName').value.trim();
+  const file = document.getElementById('uploadFile').files[0];
+  if(!assets){ errEl.textContent="Fayl yuklash bu ko'rinishda mavjud emas"; return; }
+  if(!name || !file){ errEl.textContent="Nom kiriting va faylni tanlang"; return; }
+  try{
+    const up = await assets.upload(file);
+    await db.doc('tracks/'+up.id).set({id:up.id, type:'file', name, url:up.url});
+    document.getElementById('uploadName').value='';
+    document.getElementById('uploadFile').value='';
+  }catch(e){ errEl.textContent="Yuklashda xatolik yuz berdi"; }
+}
+
+function watchTracks(){
+  db.collection('tracks').onSnapshot(docs=>{
+    uploaded = (docs||[]).map(d=>d.data?d.data():d);
+    renderTrackList();
+  });
+}
+
+async function setNowPlaying(track){
+  if(!db) return;
+  if(!track){ await db.doc('state/now_playing').set({trackId:null, updatedAt: Date.now()}); return; }
+  await db.doc('state/now_playing').set({
+    trackId:track.id, type:track.type, name:track.name,
+    notes: track.notes || null, tempo: track.tempo || null, url: track.url || null,
+    updatedAt: Date.now()
+  });
+}
+
+function renderAdminState(state){
+  allTracks().forEach(t=>{
+    const row = document.getElementById('row-'+t.id);
+    if(!row) return;
+    const btn = row.querySelector('button');
+    const active = state && state.trackId===t.id;
+    row.classList.toggle('playing', !!active);
+    btn.textContent = active ? "To'xtatish" : 'Boshlash';
+    btn.classList.toggle('stop', !!active);
+  });
+}
+
+function renderPlayerState(state){
+  const disc = document.getElementById('disc');
+  const audioEl = document.getElementById('audioEl');
+  if(state && state.trackId){
+    document.getElementById('nowTitle').textContent = state.name;
+    document.getElementById('nowState').textContent = 'Hozir chalinmoqda';
+    disc.classList.add('spin');
+    if(state.type==='file'){
+      stopSynth();
+      if(audioEl.src !== state.url){ audioEl.src = state.url; }
+      audioEl.play().catch(()=>{});
+    } else {
+      audioEl.pause();
+      synth(state.notes, state.tempo);
+    }
+    if(notifiedFor!==state.trackId && document.hidden && Notification.permission==='granted'){
+      new Notification('D,N,X.music', {body: state.name+' — eshitish uchun saytga qayting'});
+    }
+    notifiedFor = state.trackId;
+  } else {
+    document.getElementById('nowTitle').textContent = 'Hech narsa yoqilmagan';
+    document.getElementById('nowState').textContent = 'Admin musiqa yoqishini kuting';
+    disc.classList.remove('spin');
+    stopSynth();
+    audioEl.pause();
+    notifiedFor = null;
+  }
+}
+
+function watchState(cb){
+  db.doc('state/now_playing').onSnapshot(doc=>cb(doc && doc.data ? doc.data() : doc));
+}
+
+async function auth(isRegister){
+  const name = document.getElementById('uName').value.trim();
+  const pass = document.getElementById('uPass').value;
+  const errEl = document.getElementById('authErr');
+  errEl.textContent='';
+  if(!name || !pass){ errEl.textContent="Ism va parolni kiriting"; return; }
+  const ref = db.doc('users/'+name);
+  const existing = await ref.get();
+  const data = existing && existing.exists ? existing.data() : null;
+  if(isRegister){
+    if(data){ errEl.textContent="Bu foydalanuvchi allaqachon mavjud"; return; }
+    await ref.set({name, pass});
+  } else {
+    if(!data || data.pass!==pass){ errEl.textContent="Login yoki parol xato"; return; }
+  }
+  user = name; isAdmin = (name==='admin');
+  enter();
+}
+
+function enter(){
+  if(isAdmin){
+    show('admin');
+    watchTracks();
+    watchState(renderAdminState);
+  } else {
+    show('player');
+    document.getElementById('whoPill').textContent = user;
+    const noteEl = document.getElementById('notifNote');
+    if('Notification' in window){
+      Notification.requestPermission().then(p=>{
+        noteEl.textContent = p==='granted'
+          ? "Bildirishnomalar yoqildi — sayt ochiq bo'lsa, yangi musiqa haqida xabar olasiz."
+          : "Bildirishnomalar o'chiq. Musiqa faqat sayt ochiq turganda eshitiladi.";
+      });
+    }
+    watchState(renderPlayerState);
+    document.addEventListener('click', ()=>{ if(audioCtx && audioCtx.state==='suspended') audioCtx.resume(); }, {once:true});
+  }
+}
+
+boot();
+</script>
+</body>
+</html>
